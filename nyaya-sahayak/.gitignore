@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+*.log
+.env
+*.egg-info/
+web/node_modules/
+web/.next/
+web/out/

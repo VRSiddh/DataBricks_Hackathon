@@ -1,0 +1,14 @@
+# Databricks App manifest — https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-manifest
+# Platform injects PORT; app.py reads it when booting uvicorn.
+command:
+  - python
+  - app.py
+
+env:
+  - name: NYAYA_VECTOR_ENDPOINT
+    value: "nyaya-sahayak-vs"
+  - name: NYAYA_VECTOR_INDEX
+    value: "main.nyaya_sahayak.bns_chunks_index"
+  # Set NYAYA_LLM_ENDPOINT in the App UI to your exact Model Serving name (Compute → Model Serving).
+  # If unset, the app tries common pay-per-token foundation endpoints in order.
+  # Override in App UI / secrets: SARVAM_API_KEY (secret scope)

@@ -1,0 +1,30 @@
+{
+  "name": "nyaya-sahayak-ingestion",
+  "email_notifications": { "no_alert_for_skipped_runs": true },
+  "tasks": [
+    {
+      "task_key": "ingest_bns",
+      "description": "Load BNS CSV into Delta (notebook path must exist in workspace).",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/REPLACE_ME/nyaya-sahayak/databricks/notebooks/01_data_ingestion",
+        "base_parameters": {
+          "raw_csv_path": "/Volumes/main/nyaya_sahayak/raw_files/bns_sections.csv"
+        },
+        "source": "WORKSPACE"
+      },
+      "timeout_seconds": 3600,
+      "max_retries": 1,
+      "min_retry_interval_millis": 30000
+    },
+    {
+      "task_key": "chunk_bns",
+      "depends_on": [{ "task_key": "ingest_bns" }],
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/REPLACE_ME/nyaya-sahayak/databricks/notebooks/02_chunking_pipeline",
+        "source": "WORKSPACE"
+      },
+      "timeout_seconds": 3600
+    }
+  ],
+  "format": "MULTI_TASK"
+}

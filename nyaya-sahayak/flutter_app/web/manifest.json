@@ -1,0 +1,9 @@
+{
+  "name": "Nyaya-Sahayak",
+  "short_name": "Nyaya",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0B1220",
+  "theme_color": "#1B4D3E",
+  "description": "Nyaya-Sahayak — BNS-aware legal assistant"
+}

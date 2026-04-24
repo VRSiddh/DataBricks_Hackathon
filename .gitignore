@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.env
+.env.*
+
+# Node / Next
+node_modules/
+.next/
+out/
+
+# Databricks local sync metadata
+**/.databricks/sync-snapshots/
+
+# Flutter
+.dart_tool/
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
