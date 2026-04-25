@@ -4,11 +4,14 @@ import { useEffect } from "react";
 
 export function ThemeInit() {
   useEffect(() => {
+    // Fallback: if anti-FOUC script didn't run, set dark (default)
+    const hasClass =
+      document.documentElement.classList.contains("dark") ||
+      document.documentElement.classList.contains("light");
+    if (hasClass) return;
     const stored = localStorage.getItem("nyaya-theme");
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
-    const light = stored === "light" || (stored == null && !prefersDark);
-    document.documentElement.classList.toggle("dark", !light);
-    document.documentElement.classList.toggle("light", light);
+    const dark = stored !== "light"; // default → dark
+    document.documentElement.classList.add(dark ? "dark" : "light");
   }, []);
   return null;
 }
