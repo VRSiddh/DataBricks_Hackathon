@@ -7,7 +7,7 @@
 
 # COMMAND ----------
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 source_table = f"{catalog}.{schema}.bns_sections"
 chunks_table = f"{catalog}.{schema}.bns_chunks"
@@ -145,3 +145,4 @@ display(spark.table(chunks_table).orderBy("section", "chunk_index").limit(20))
 # COMMAND ----------
 
 print("Chunks written:", spark.table(chunks_table).count(), "→", chunks_table)
+

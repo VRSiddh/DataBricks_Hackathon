@@ -1,14 +1,14 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # 05 — IPC → BNS mapping table (Complete)
-# MAGIC Loads **150+ curated** mappings from `ipc_bns_mapping.csv` into `main.nyaya_sahayak.ipc_bns_mapping`.
+# MAGIC Loads **150+ curated** mappings from `ipc_bns_mapping.csv` into `workspace.nyaya_sahayak.ipc_bns_mapping`.
 # MAGIC Sources: BPR&D correspondence table, UP Police ready reference, official Gazette of India.
 # MAGIC
 # MAGIC **Note:** IPC sections marked `0` are new BNS provisions with no IPC equivalent (e.g., organised crime, terrorism).
 
 # COMMAND ----------
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 table = f"{catalog}.{schema}.ipc_bns_mapping"
 
@@ -63,3 +63,4 @@ display(spark.table(table).orderBy("ipc_section"))
 total = spark.table(table).count()
 new_bns = spark.table(table).filter(F.col("ipc_section") == 0).count()
 print(f"Loaded {total} IPC→BNS mappings ({new_bns} are new BNS-only provisions) into {table}")
+

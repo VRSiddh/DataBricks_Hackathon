@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     sarvam_api_key: str = os.environ.get("SARVAM_API_KEY", "sk_jpqtipyn_SS4oYlXZgjr9ZlBTPZMPyXWq")
 
     vector_endpoint: str = os.environ.get("NYAYA_VECTOR_ENDPOINT", "nyaya-sahayak-vs")
-    vector_index: str = os.environ.get("NYAYA_VECTOR_INDEX", "main.nyaya_sahayak.bns_chunks_index")
+    vector_index: str = os.environ.get("NYAYA_VECTOR_INDEX", "workspace.nyaya_sahayak.bns_chunks_index")
 
     # Comma-separated Model Serving endpoint names (first match wins). Empty = use built-in fallbacks in llm_service.
     llm_serving_endpoint: str = os.environ.get("NYAYA_LLM_ENDPOINT", "")
@@ -28,3 +28,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+

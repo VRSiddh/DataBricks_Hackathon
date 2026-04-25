@@ -17,7 +17,7 @@ import mlflow
 import time
 import json
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 experiment_name = "/Shared/nyaya-sahayak-rag-eval"
 
@@ -230,7 +230,7 @@ def live_retrieve_sections(query: str, num_results: int = 5):
         else:
             vsc = VectorSearchClient(disable_notice=True)
 
-        index = vsc.get_index("nyaya-sahayak-vs", "main.nyaya_sahayak.bns_chunks_index")
+        index = vsc.get_index("nyaya-sahayak-vs", "workspace.nyaya_sahayak.bns_chunks_index")
         result = index.similarity_search(
             columns=["chunk_text", "section", "section_name"],
             query_text=query,
@@ -412,3 +412,4 @@ print("\n✅ MLflow run complete. Open Experiments →", experiment_name)
 # MAGIC | Recall | ≥ 60% | Fraction of expected sections that were retrieved |
 # MAGIC | Keyword Relevance | ≥ 70% | Expected keywords present in retrieved context |
 # MAGIC | P90 Latency | ≤ 2s | 90th percentile retrieval latency |
+

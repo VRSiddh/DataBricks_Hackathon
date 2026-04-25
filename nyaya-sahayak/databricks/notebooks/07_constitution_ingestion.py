@@ -2,14 +2,14 @@
 # MAGIC %md
 # MAGIC # 07 — Constitution of India Ingestion
 # MAGIC Loads the Constitution of India articles into Delta Lake for RAG retrieval.
-# MAGIC Creates `main.nyaya_sahayak.constitution_articles` and `main.nyaya_sahayak.constitution_chunks`.
+# MAGIC Creates `workspace.nyaya_sahayak.constitution_articles` and `workspace.nyaya_sahayak.constitution_chunks`.
 # MAGIC
 # MAGIC **Source:** civictech-India/constitution-of-india (public domain Indian government text).
 # MAGIC **Prerequisite:** Upload `data/constitution_articles.csv` to `/Volumes/main/nyaya_sahayak/raw_files/`.
 
 # COMMAND ----------
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 raw_table = f"{catalog}.{schema}.constitution_articles"
 chunks_table = f"{catalog}.{schema}.constitution_chunks"
@@ -152,3 +152,4 @@ display(spark.table(chunks_table).orderBy("article_number", "chunk_index").limit
 total = spark.table(chunks_table).count()
 print(f"Constitution chunks: {total} → {chunks_table}")
 print("Next: Create Vector Search index or union with BNS chunks for a combined index.")
+

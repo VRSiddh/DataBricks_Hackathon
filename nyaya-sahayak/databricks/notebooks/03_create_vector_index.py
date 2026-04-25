@@ -3,14 +3,14 @@
 # MAGIC # 03 — Mosaic AI Vector Search (Delta Sync)
 # MAGIC Creates **one** Vector Search endpoint (Free Edition quota) and a **Delta Sync** index on `bns_chunks.chunk_text`.
 # MAGIC
-# MAGIC **Prerequisites:** `main.nyaya_sahayak.bns_chunks` exists with CDF enabled; workspace has Vector Search + embedding model access.
+# MAGIC **Prerequisites:** `workspace.nyaya_sahayak.bns_chunks` exists with CDF enabled; workspace has Vector Search + embedding model access.
 
 # COMMAND ----------
 
 dbutils.widgets.text("endpoint_name", "nyaya-sahayak-vs")
 endpoint_name = dbutils.widgets.get("endpoint_name")
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 source_table = f"{catalog}.{schema}.bns_chunks"
 index_name = f"{catalog}.{schema}.bns_chunks_index"
@@ -59,3 +59,4 @@ print(index)
 
 # MAGIC %md
 # MAGIC Poll status in UI: **Compute → Vector Search** until index is **Ready**. Then query from the app with `VectorSearchClient().get_index(endpoint, index_name).similarity_search(...)`.
+

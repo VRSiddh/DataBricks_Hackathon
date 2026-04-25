@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # 01 — Data Ingestion (BNS → Delta)
-# MAGIC Loads `bns_sections.csv` from a Unity Catalog volume, cleans with PySpark, writes `main.nyaya_sahayak.bns_sections` with **Change Data Feed** enabled.
+# MAGIC Loads `bns_sections.csv` from a Unity Catalog volume, cleans with PySpark, writes `workspace.nyaya_sahayak.bns_sections` with **Change Data Feed** enabled.
 
 # COMMAND ----------
 
@@ -11,7 +11,7 @@
 
 # COMMAND ----------
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 table = f"{catalog}.{schema}.bns_sections"
 raw_csv_path = dbutils.widgets.text("raw_csv_path", "/Volumes/main/nyaya_sahayak/raw_files/bns_sections.csv")
@@ -81,3 +81,4 @@ display(spark.table(table).limit(10))
 # COMMAND ----------
 
 print(f"Ingested into {table}; row count:", spark.table(table).count())
+

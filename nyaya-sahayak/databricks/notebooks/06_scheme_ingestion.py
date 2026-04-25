@@ -9,7 +9,7 @@
 
 # COMMAND ----------
 
-catalog = "main"
+catalog = "workspace"
 schema = "nyaya_sahayak"
 raw_table = f"{catalog}.{schema}.gov_schemes"
 chunks_table = f"{catalog}.{schema}.scheme_chunks"
@@ -166,3 +166,4 @@ total = spark.table(chunks_table).count()
 print(f"Scheme chunks: {total} → {chunks_table}")
 print("Next step: Create/sync Vector Search index on this table.")
 display(spark.table(chunks_table).groupBy("chunk_type").count().orderBy("count", ascending=False))
+

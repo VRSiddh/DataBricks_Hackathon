@@ -8,9 +8,10 @@ env:
   - name: NYAYA_VECTOR_ENDPOINT
     value: "nyaya-sahayak-vs"
   - name: NYAYA_VECTOR_INDEX
-    value: "main.nyaya_sahayak.bns_chunks_index"
+    value: "workspace.nyaya_sahayak.bns_chunks_index"
   - name: SARVAM_API_KEY
     description: "Sarvam AI API key for STT (Saaras v3), TTS (Bulbul v3), and Translation"
     # Set this value in the Databricks Apps UI under Settings → Environment Variables
   - name: NYAYA_LLM_ENDPOINT
     description: "Comma-separated Model Serving endpoint names. If unset, auto-detects foundation endpoints."
+
