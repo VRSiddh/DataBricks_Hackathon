@@ -3,6 +3,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { LANGUAGES } from "@/lib/languages";
 import { ThemeInit } from "@/components/ThemeInit";
 
+const CTA_HREF = "/login/";
+
 const features = [
   {
     icon: (

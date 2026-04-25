@@ -1,183 +1,101 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-
-interface SpeechRec extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((e: SpeechRecResultEvent) => void) | null;
-  onerror: ((e: SpeechRecErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  onstart: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-}
-
-interface SpeechRecResultEvent {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecErrorEvent {
-  error: string;
-  message?: string;
-}
-
-type SpeechRecCtor = new () => SpeechRec;
-
-function getSR(): SpeechRecCtor | undefined {
-  if (typeof window === "undefined") return undefined;
-  const w = window as unknown as { SpeechRecognition?: SpeechRecCtor; webkitSpeechRecognition?: SpeechRecCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
-}
-
-function humanizeSpeechError(code: string): string {
-  switch (code) {
-    case "not-allowed":
-    case "service-not-allowed":
-      return "Microphone blocked — allow mic for this site in the browser lock icon, then try again.";
-    case "no-speech":
-      return "No speech heard — speak closer to the mic or check input volume.";
-    case "audio-capture":
-      return "No microphone found — plug in a mic or enable the built-in mic.";
-    case "network":
-      return "Speech service network error — check connection (Chrome uses Google’s STT).";
-    case "aborted":
-      return "Speech capture aborted.";
-    default:
-      return `Speech recognition error: ${code}`;
-  }
-}
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getApiBase } from "@/lib/apiBase";
 
 interface Props {
-  /** BCP-47 language tag, e.g. "hi-IN", "en-IN" — controls recognition language */
   language: string;
   onTranscript: (text: string) => void;
-  onSpeechError?: (message: string) => void;
+  onError?: (msg: string) => void;
   disabled?: boolean;
 }
 
-export default function VoiceInput({ language, onTranscript, onSpeechError, disabled }: Props) {
+export default function VoiceInput({ language, onTranscript, onError, disabled }: Props) {
   const [listening, setListening] = useState(false);
-  const recRef = useRef<SpeechRec | null>(null);
-  const SR = getSR();
+  const [supported, setSupported] = useState(false);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const base = getApiBase();
 
-  const stopInternal = useCallback(() => {
-    try {
-      recRef.current?.stop();
-    } catch {
-      /* ignore */
+  useEffect(() => {
+    setSupported(!!(navigator.mediaDevices && window.MediaRecorder));
+  }, []);
+
+  const stop = useCallback(() => {
+    if (mediaRef.current && mediaRef.current.state !== "inactive") {
+      mediaRef.current.stop();
     }
-    recRef.current = null;
     setListening(false);
   }, []);
 
-  const startListening = useCallback(async () => {
-    const Ctor = getSR();
-    if (!Ctor) {
-      onSpeechError?.("Voice input needs Chrome or Edge over HTTPS (Web Speech API).");
-      return;
-    }
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      onSpeechError?.("Voice input requires HTTPS (secure context).");
-      return;
-    }
+  const start = useCallback(async () => {
+    let stream: MediaStream;
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      onSpeechError?.("Microphone permission denied — allow access when the browser prompts.");
+      onError?.("Microphone permission denied — allow access in the browser address bar.");
       return;
     }
 
-    const rec = new Ctor();
-    rec.lang = language;
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
+    // Pick a supported MIME type
+    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg", "audio/mp4", ""].find(
+      (m) => !m || MediaRecorder.isTypeSupported(m),
+    ) ?? "";
 
-    const finals: string[] = [];
-    rec.onresult = (e: SpeechRecResultEvent) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) {
-          finals.push(r[0].transcript);
+    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    chunksRef.current = [];
+
+    rec.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    rec.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+      if (blob.size < 100) return; // nothing recorded
+
+      const ext = (rec.mimeType || "audio/webm").includes("ogg") ? "ogg" : "webm";
+      const fd = new FormData();
+      fd.append("audio", blob, `recording.${ext}`);
+      fd.append("language_code", language);
+
+      try {
+        const r = await fetch(`${base}/api/stt`, { method: "POST", body: fd });
+        const data = await r.json();
+        if (!r.ok) {
+          onError?.(data?.detail || `STT error ${r.status}`);
+          return;
         }
+        if (data.transcript) onTranscript(data.transcript);
+      } catch (e) {
+        onError?.(`STT request failed: ${e}`);
       }
     };
-    rec.onerror = (ev: SpeechRecErrorEvent) => {
-      const msg = humanizeSpeechError(ev.error || "unknown");
-      onSpeechError?.(msg);
-      stopInternal();
-    };
-    rec.onend = () => {
-      const text = finals.join(" ").trim();
-      if (text) onTranscript(text);
-      recRef.current = null;
-      setListening(false);
-    };
 
-    recRef.current = rec;
-    try {
-      rec.start();
-      setListening(true);
-    } catch (err) {
-      onSpeechError?.(`Could not start speech recognition: ${String(err)}`);
-      stopInternal();
-    }
-  }, [language, onSpeechError, onTranscript, stopInternal]);
+    rec.start(200);
+    mediaRef.current = rec;
+    setListening(true);
+  }, [base, language, onError, onTranscript]);
 
   const toggle = useCallback(() => {
-    if (listening) {
-      try {
-        recRef.current?.stop();
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-    void startListening();
-  }, [listening, startListening]);
+    if (listening) stop();
+    else void start();
+  }, [listening, start, stop]);
 
-  const unsupported = !SR;
+  if (!supported) return null;
 
   return (
     <button
       type="button"
-      onClick={() => {
-        if (unsupported) {
-          onSpeechError?.("Voice input needs Chrome or Edge over HTTPS (Web Speech API). Firefox/Safari are not supported.");
-          return;
-        }
-        void toggle();
-      }}
+      onClick={toggle}
       disabled={disabled}
-      aria-label={
-        unsupported
-          ? "Voice input not supported in this browser"
-          : listening
-            ? "Stop recording"
-            : `Speak in ${language}`
-      }
-      title={
-        unsupported
-          ? "Use Chrome or Edge on HTTPS for multilingual voice (hi-IN, ta-IN, …)"
-          : listening
-            ? "Tap to stop and insert text"
-            : `Speak in ${language} — works best in Chrome`
-      }
-      className={`h-11 w-11 shrink-0 rounded-2xl transition-all duration-200
-        flex items-center justify-center
-        ${
-          listening
-            ? "bg-red-500 text-white mic-recording border border-red-400"
-            : unsupported
-              ? "opacity-50 border border-dashed"
-              : "btn-icon"
-        }
-        ${disabled ? "opacity-40 cursor-not-allowed" : ""}
-      `}
+      aria-label={listening ? "Stop recording" : `Speak in ${language}`}
+      title={listening ? "Tap to stop and transcribe" : `Voice input (${language}) — powered by Sarvam AI`}
+      className={[
+        "h-11 w-11 shrink-0 rounded-2xl transition-all duration-200 flex items-center justify-center",
+        listening ? "bg-red-500 text-white mic-recording border border-red-400" : "btn-icon",
+        disabled ? "opacity-40 cursor-not-allowed" : "",
+      ].join(" ")}
     >
       {listening ? (
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">

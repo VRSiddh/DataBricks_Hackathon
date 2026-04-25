@@ -46,8 +46,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [followUp, setFollowUp] = useState("");
   const [error, setError] = useState<string | null>(null);
-  /** Collapsible drawer — default hidden on all breakpoints */
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  /** Sidebar: open by default on desktop, closed on mobile */
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -160,16 +160,17 @@ export default function ChatPage() {
       <ThemeInit />
       <div className="flex h-dvh w-full overflow-hidden">
         {/* ── Sidebar ────────────────────────────────────────── */}
+        {/* Mobile overlay only — no blur so main chat stays interactive */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 backdrop-blur-[2px]"
-            style={{ background: "rgba(0,0,0,0.45)" }}
+            className="fixed inset-0 z-30 md:hidden"
+            style={{ background: "rgba(0,0,0,0.4)" }}
             aria-hidden
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Peek tab — open drawer from left edge */}
+        {/* Peek chevron when closed */}
         {!sidebarOpen && (
           <button
             type="button"
@@ -186,11 +187,12 @@ export default function ChatPage() {
         )}
 
         <aside
-          className={`
-            glass-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col gap-5 p-5
-            shadow-2xl transition-transform duration-300 ease-out
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"}
-          `}
+          className={[
+            "glass-sidebar flex w-72 shrink-0 flex-col gap-5 overflow-y-auto p-5 shadow-xl",
+            "transition-all duration-300 ease-out",
+            "fixed inset-y-0 left-0 z-40 md:relative md:inset-auto md:z-auto",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none",
+          ].join(" ")}
           aria-hidden={!sidebarOpen}
         >
           {/* Logo */}
@@ -518,7 +520,7 @@ export default function ChatPage() {
                 <VoiceInput
                   language={lang}
                   onTranscript={onTranscript}
-                  onSpeechError={(msg) => setError(msg)}
+                  onError={(msg) => setError(msg)}
                   disabled={busy}
                 />
 
