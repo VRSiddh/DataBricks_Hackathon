@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     databricks_host: str = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
     databricks_token: str = os.environ.get("DATABRICKS_TOKEN", "")
-    sarvam_api_key: str = os.environ.get("SARVAM_API_KEY", "")
+    sarvam_api_key: str = os.environ.get("SARVAM_API_KEY", "sk_jpqtipyn_SS4oYlXZgjr9ZlBTPZMPyXWq")
 
     vector_endpoint: str = os.environ.get("NYAYA_VECTOR_ENDPOINT", "nyaya-sahayak-vs")
     vector_index: str = os.environ.get("NYAYA_VECTOR_INDEX", "main.nyaya_sahayak.bns_chunks_index")

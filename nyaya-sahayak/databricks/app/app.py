@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from routers import analyze, chat, health
+from routers import analyze, chat, health, schemes, stt
 
 app = FastAPI(title="Nyaya-Sahayak API", version="0.1.0")
 
@@ -51,6 +51,8 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(analyze.router)
 app.include_router(chat.router)
+app.include_router(schemes.router)
+app.include_router(stt.router)
 
 # mount Next.js static export last (catch-all for HTML); /api, /docs stay on FastAPI
 if _web_static_ok():

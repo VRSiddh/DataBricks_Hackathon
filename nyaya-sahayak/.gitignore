@@ -14,3 +14,12 @@ build/
 web/node_modules/
 web/.next/
 web/out/
+
+# Large datasets (download from Kaggle separately)
+data/bilingual/
+data/elchemist/
+
+# Archives
+archive/
+archive (1)/
+

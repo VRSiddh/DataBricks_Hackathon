@@ -1,7 +1,9 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 02 — Chunking pipeline (BNS sections → `bns_chunks`)
-# MAGIC Builds RAG-ready rows: metadata prefix + description; splits very long text into overlapping windows (~512 tokens ≈ 2000 chars heuristic).
+# MAGIC # 02 — Sentence-aware chunking pipeline (BNS sections → `bns_chunks`)
+# MAGIC Builds RAG-ready rows with metadata prefix + description.
+# MAGIC **Improvement:** Sentence-aware splitting instead of arbitrary character boundary.
+# MAGIC Splits at sentence boundaries (`.`, `।`) for better semantic coherence.
 
 # COMMAND ----------
 
@@ -16,26 +18,65 @@ overlap_chars = 200
 # COMMAND ----------
 
 import hashlib
+import re
 
 
-def chunk_text(text: str, max_c: int, overlap: int):
+def sentence_split(text: str) -> list[str]:
+    """Split text into sentences (handles both English and Hindi)."""
+    # Split on English period, Hindi purna viram, semicolon, or newline
+    raw = re.split(r'(?<=[.।;])\s+|\n+', text)
+    return [s.strip() for s in raw if s.strip()]
+
+
+def chunk_text_sentence_aware(text: str, max_c: int, overlap: int) -> list[str]:
+    """Chunk text at sentence boundaries with overlap."""
     if text is None:
         return []
     text = text.strip()
     if len(text) <= max_c:
         return [text]
-    out = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_c, len(text))
-        piece = text[start:end]
-        out.append(piece)
-        if end >= len(text):
-            break
-        start = end - overlap
-        if start < 0:
-            start = 0
-    return out
+
+    sentences = sentence_split(text)
+    if not sentences:
+        return [text[:max_c]]
+
+    chunks = []
+    current_chunk = ""
+    overlap_buffer = []  # sentences to prepend to next chunk
+
+    for sent in sentences:
+        candidate = (current_chunk + " " + sent).strip() if current_chunk else sent
+
+        if len(candidate) <= max_c:
+            current_chunk = candidate
+            overlap_buffer.append(sent)
+            # Keep only last few sentences for overlap
+            while sum(len(s) + 1 for s in overlap_buffer) > overlap and len(overlap_buffer) > 1:
+                overlap_buffer.pop(0)
+        else:
+            # Current chunk is full, save it
+            if current_chunk:
+                chunks.append(current_chunk)
+
+            # Start new chunk with overlap sentences + current sentence
+            overlap_text = " ".join(overlap_buffer)
+            if len(overlap_text) + len(sent) + 1 <= max_c:
+                current_chunk = (overlap_text + " " + sent).strip()
+            else:
+                current_chunk = sent
+            # Handle very long sentences (longer than max_c)
+            if len(current_chunk) > max_c:
+                # Fall back to character-based splitting for this sentence
+                while len(current_chunk) > max_c:
+                    chunks.append(current_chunk[:max_c])
+                    current_chunk = current_chunk[max_c - overlap:]
+
+            overlap_buffer = [sent]
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks
 
 
 def stable_chunk_id(section: int, chapter: int, idx: int) -> str:
@@ -46,7 +87,7 @@ def stable_chunk_id(section: int, chapter: int, idx: int) -> str:
 def chunk_rows(chapter, chapter_name, chapter_subtype, section, section_name, description):
     prefix = f"BNS Section {section}: {section_name or ''} | Chapter {chapter}: {chapter_name or ''} | Subtype: {chapter_subtype or ''}\n\n"
     base = (description or "").strip()
-    pieces = chunk_text(base, max_chars, overlap_chars)
+    pieces = chunk_text_sentence_aware(base, max_chars - len(prefix), overlap_chars)
     rows = []
     for i, p in enumerate(pieces):
         chunk_text_full = prefix + p

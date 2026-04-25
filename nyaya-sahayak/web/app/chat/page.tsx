@@ -7,8 +7,10 @@ import { LANGUAGES } from "@/lib/languages";
 import VoiceInput from "@/components/VoiceInput";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ThemeInit } from "@/components/ThemeInit";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
+import AudioPlayer from "@/components/AudioPlayer";
 
-type Msg = { role: "user" | "assistant"; text: string; file?: string };
+type Msg = { role: "user" | "assistant"; text: string; file?: string; audio?: string | null };
 
 type Analysis = {
   document_summary: string;
@@ -47,6 +49,9 @@ export default function ChatPage() {
   const [followUp, setFollowUp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [schemeModal, setSchemeModal] = useState(false);
+  const [schemeResults, setSchemeResults] = useState<any[]>([]);
+  const [schemeLoading, setSchemeLoading] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -83,7 +88,7 @@ export default function ChatPage() {
       if (a.action_steps?.length) {
         body += "\n\nNext steps:\n" + a.action_steps.map((s, i) => `${i + 1}. ${s}`).join("\n");
       }
-      setMessages((m) => [...m, { role: "assistant", text: body }]);
+      setMessages((m) => [...m, { role: "assistant", text: body, audio: data.audio_base64 || null }]);
     } catch (e) {
       setError(String(e));
       setMessages((m) => [...m, { role: "assistant", text: `Error: ${e}` }]);
@@ -127,7 +132,7 @@ export default function ChatPage() {
       const txt = await r.text();
       if (!r.ok) throw new Error(txt);
       const data = JSON.parse(txt) as { reply: string };
-      setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
+      setMessages((m) => [...m, { role: "assistant", text: data.reply, audio: (data as any).audio_base64 || null }]);
     } catch (e) {
       setError(String(e));
       setMessages((m) => [...m, { role: "assistant", text: `Error: ${e}` }]);
@@ -282,6 +287,23 @@ export default function ChatPage() {
             </p>
           </div>
 
+          {/* Scheme eligibility button */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setSchemeModal(true)}
+              className="btn-ghost w-full gap-2 px-4 py-3 text-sm"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Check Scheme Eligibility
+            </button>
+            <p className="mt-1 text-xs" style={{ color: "var(--fg2)" }}>
+              Find government schemes you qualify for
+            </p>
+          </div>
+
           <div
             className="rounded-xl border p-3 text-xs"
             style={{ borderColor: "var(--accent)", background: "var(--glow)", color: "var(--accent)" }}
@@ -381,12 +403,12 @@ export default function ChatPage() {
                       "What are my rights under BNS Section 115?",
                       "Explain IPC Section 420 in simple Hindi",
                       "What to do after receiving a police notice?",
-                      "Difference between cognizable and non-cognizable offences",
+                      "What government schemes can help crime victims?",
                     ].map((s) => (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => setFollowUp(s)}
+                        onClick={() => { setFollowUp(s); setTimeout(() => { const btn = document.querySelector('[aria-label="Send message"]') as HTMLButtonElement; btn?.click(); }, 100); }}
                         className="glass rounded-xl px-4 py-3 text-left text-xs transition-all hover:border-[var(--accent)]"
                         style={{ color: "var(--fg2)" }}
                       >
@@ -429,7 +451,14 @@ export default function ChatPage() {
                         {m.file}
                       </p>
                     )}
-                    <p className="whitespace-pre-wrap">{m.text}</p>
+                    {m.role === "assistant" ? (
+                      <>
+                        <MarkdownRenderer text={m.text} />
+                        <AudioPlayer audioBase64={m.audio || null} />
+                      </>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{m.text}</p>
+                    )}
                   </div>
                   {m.role === "user" && (
                     <div
@@ -541,6 +570,111 @@ export default function ChatPage() {
           </div>
         </main>
       </div>
+
+      {/* ── Scheme Eligibility Modal ────────────────────────── */}
+      {schemeModal && (
+        <div className="scheme-modal-backdrop" onClick={() => setSchemeModal(false)}>
+          <div className="scheme-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Check Scheme Eligibility</h3>
+              <button
+                onClick={() => setSchemeModal(false)}
+                className="btn-icon h-8 w-8"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setSchemeLoading(true);
+                const fd = new FormData(e.target as HTMLFormElement);
+                try {
+                  const r = await fetch(`${base}/api/scheme_check`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      age: fd.get("age") ? Number(fd.get("age")) : undefined,
+                      gender: fd.get("gender") || undefined,
+                      income: fd.get("income") ? Number(fd.get("income")) : undefined,
+                      caste: fd.get("caste") || undefined,
+                      query: fd.get("query") || undefined,
+                    }),
+                  });
+                  const data = await r.json();
+                  setSchemeResults(data.matched_schemes || []);
+                } catch (err) {
+                  setSchemeResults([]);
+                } finally {
+                  setSchemeLoading(false);
+                }
+              }}
+              className="space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium" style={{ color: "var(--fg2)" }}>Age</label>
+                  <input name="age" type="number" placeholder="e.g. 25" className="ns-input mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium" style={{ color: "var(--fg2)" }}>Gender</label>
+                  <select name="gender" className="ns-input mt-1">
+                    <option value="">Any</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium" style={{ color: "var(--fg2)" }}>Annual Income (₹)</label>
+                  <input name="income" type="number" placeholder="e.g. 200000" className="ns-input mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium" style={{ color: "var(--fg2)" }}>Category</label>
+                  <select name="caste" className="ns-input mt-1">
+                    <option value="">Any</option>
+                    <option value="General">General</option>
+                    <option value="OBC">OBC</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                    <option value="EWS">EWS</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium" style={{ color: "var(--fg2)" }}>What kind of help do you need?</label>
+                <input name="query" type="text" placeholder="e.g. legal aid, health insurance, housing" className="ns-input mt-1" />
+              </div>
+              <button type="submit" disabled={schemeLoading} className="btn-accent w-full py-3">
+                {schemeLoading ? "Searching..." : "Find Schemes"}
+              </button>
+            </form>
+
+            {schemeResults.length > 0 && (
+              <div className="mt-4 space-y-3 max-h-60 overflow-y-auto">
+                <p className="text-xs font-semibold" style={{ color: "var(--accent)" }}>
+                  {schemeResults.length} schemes found
+                </p>
+                {schemeResults.map((s: any, i: number) => (
+                  <div key={i} className="scheme-card">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-bold">{s.scheme_name}</h4>
+                      <span className="scheme-badge">{s.category}</span>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: "var(--fg2)" }}>{s.ministry}</p>
+                    <p className="text-xs mt-2"><strong>Benefits:</strong> {s.benefits}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--accent)" }}>
+                      <strong>How to apply:</strong> {s.application_process}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

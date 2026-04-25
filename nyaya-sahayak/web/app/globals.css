@@ -200,3 +200,131 @@ body {
   50%       { transform: translateY(-12px) scale(1.03); }
 }
 .orb-float { animation: orb-float 6s ease-in-out infinite; }
+
+/* ── Markdown content styles ───────────────────────────────────── */
+.markdown-content .md-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  color: var(--fg);
+}
+.markdown-content .md-h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: var(--fg);
+}
+.markdown-content .md-h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.2rem;
+  color: var(--fg);
+}
+.markdown-content .md-p {
+  margin: 0.2rem 0;
+  line-height: 1.65;
+}
+.markdown-content .md-ol,
+.markdown-content .md-ul {
+  margin: 0.35rem 0;
+  padding-left: 1.4rem;
+}
+.markdown-content .md-ol { list-style: decimal; }
+.markdown-content .md-ul { list-style: disc; }
+.markdown-content .md-ol li,
+.markdown-content .md-ul li {
+  margin: 0.15rem 0;
+  line-height: 1.6;
+}
+.markdown-content .md-hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.75rem 0;
+}
+.markdown-content .inline-code {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  @apply rounded px-1.5 py-0.5 text-xs font-mono;
+}
+.markdown-content .md-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  font-size: 0.82rem;
+}
+.markdown-content .md-table th,
+.markdown-content .md-table td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+.markdown-content .md-table th {
+  background: var(--card2);
+  font-weight: 600;
+}
+.markdown-content br { display: block; content: ""; margin-top: 0.3rem; }
+
+/* BNS / IPC section reference badges */
+.bns-ref {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  @apply rounded px-1 py-0.5 text-xs font-semibold whitespace-nowrap;
+}
+.ipc-ref {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  @apply rounded px-1 py-0.5 text-xs font-semibold whitespace-nowrap;
+}
+
+/* ── Audio player ──────────────────────────────────────────────── */
+.audio-player {
+  height: 32px;
+  border-radius: 999px;
+  max-width: 200px;
+}
+.audio-player::-webkit-media-controls-panel {
+  background: var(--card2);
+}
+
+/* ── Scheme card ───────────────────────────────────────────────── */
+.scheme-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  @apply rounded-xl p-4 transition-all duration-200;
+}
+.scheme-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.2);
+}
+.scheme-badge {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  @apply rounded-full px-2 py-0.5 text-xs font-medium;
+}
+
+/* ── Scheme eligibility modal ──────────────────────────────────── */
+.scheme-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  @apply flex items-center justify-center;
+}
+.scheme-modal {
+  background: var(--sidebar);
+  border: 1px solid var(--border);
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  @apply rounded-2xl p-6;
+}
+
