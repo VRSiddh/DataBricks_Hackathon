@@ -46,6 +46,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [followUp, setFollowUp] = useState("");
   const [error, setError] = useState<string | null>(null);
+  /** Collapsible drawer — default hidden on all breakpoints */
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -159,22 +160,38 @@ export default function ChatPage() {
       <ThemeInit />
       <div className="flex h-dvh w-full overflow-hidden">
         {/* ── Sidebar ────────────────────────────────────────── */}
-        {/* Mobile overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 md:hidden"
-            style={{ background: "rgba(0,0,0,0.5)" }}
+            className="fixed inset-0 z-30 backdrop-blur-[2px]"
+            style={{ background: "rgba(0,0,0,0.45)" }}
+            aria-hidden
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
+        {/* Peek tab — open drawer from left edge */}
+        {!sidebarOpen && (
+          <button
+            type="button"
+            className="btn-icon fixed left-0 top-1/2 z-20 h-24 w-7 -translate-y-1/2 rounded-r-xl border-l-0 shadow-lg"
+            style={{ borderColor: "var(--border)" }}
+            aria-label="Open sidebar"
+            title="Menu"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <svg className="mx-auto h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <polyline points="9,18 15,12 9,6" />
+            </svg>
+          </button>
+        )}
+
         <aside
           className={`
-            glass-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 gap-5
-            transition-transform duration-300
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-            md:relative md:translate-x-0
+            glass-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col gap-5 p-5
+            shadow-2xl transition-transform duration-300 ease-out
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"}
           `}
+          aria-hidden={!sidebarOpen}
         >
           {/* Logo */}
           <div className="flex items-center justify-between">
@@ -191,7 +208,8 @@ export default function ChatPage() {
               </div>
             </div>
             <button
-              className="btn-icon h-8 w-8 md:hidden"
+              type="button"
+              className="btn-icon h-8 w-8"
               onClick={() => setSidebarOpen(false)}
               aria-label="Close sidebar"
             >
@@ -201,11 +219,11 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {/* Nav links */}
           <nav className="space-y-1">
             <Link
               href="/"
               className="btn-ghost flex w-full items-center gap-3 px-3 py-2.5 text-sm"
+              onClick={() => setSidebarOpen(false)}
             >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -213,29 +231,6 @@ export default function ChatPage() {
               </svg>
               Home
             </Link>
-            <a
-              href="/api/health"
-              target="_blank"
-              rel="noopener"
-              className="btn-ghost flex w-full items-center gap-3 px-3 py-2.5 text-sm"
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
-              </svg>
-              API health
-            </a>
-            <a
-              href="/docs"
-              target="_blank"
-              rel="noopener"
-              className="btn-ghost flex w-full items-center gap-3 px-3 py-2.5 text-sm"
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14,2 14,8 20,8" />
-              </svg>
-              API docs
-            </a>
           </nav>
 
           <hr style={{ borderColor: "var(--border)" }} />
@@ -292,16 +287,7 @@ export default function ChatPage() {
             </p>
           </div>
 
-          {/* Spacer */}
           <div className="flex-1" />
-
-          <hr style={{ borderColor: "var(--border)" }} />
-
-          {/* Theme toggle */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "var(--fg2)" }}>Appearance</span>
-            <ThemeToggle />
-          </div>
 
           <p className="text-xs" style={{ color: "var(--fg2)" }}>
             Prototype · not legal advice
@@ -309,7 +295,7 @@ export default function ChatPage() {
         </aside>
 
         {/* ── Main chat area ─────────────────────────────────── */}
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Mobile header */}
           <header
             className="glass-nav flex shrink-0 items-center justify-between px-4 py-3 md:hidden"
@@ -339,14 +325,28 @@ export default function ChatPage() {
 
           {/* Desktop header strip */}
           <div
-            className="hidden shrink-0 items-center justify-between border-b px-6 py-3 md:flex"
+            className="hidden shrink-0 items-center justify-between border-b px-4 py-3 md:flex"
             style={{ borderColor: "var(--border)" }}
           >
-            <div>
-              <h2 className="text-sm font-bold">Legal Assistant</h2>
-              <p className="text-xs" style={{ color: "var(--fg2)" }}>
-                BNS · {currentLangLabel} · {docPreview ? "Document linked" : "Chat"}
-              </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="btn-icon h-9 w-9"
+                aria-label="Open sidebar"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <div>
+                <h2 className="text-sm font-bold">Legal Assistant</h2>
+                <p className="text-xs" style={{ color: "var(--fg2)" }}>
+                  BNS · {currentLangLabel} · {docPreview ? "Document linked" : "Chat"}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -398,7 +398,7 @@ export default function ChatPage() {
                     className="mt-4 text-xs"
                     style={{ color: "var(--fg2)" }}
                   >
-                    Voice input available — click the mic button below after uploading a document or typing a question.
+                    Voice: use Chrome/Edge over HTTPS — pick language above, then tap the mic. Tap again to stop and insert text.
                   </p>
                 </div>
               )}
@@ -518,6 +518,7 @@ export default function ChatPage() {
                 <VoiceInput
                   language={lang}
                   onTranscript={onTranscript}
+                  onSpeechError={(msg) => setError(msg)}
                   disabled={busy}
                 />
 
