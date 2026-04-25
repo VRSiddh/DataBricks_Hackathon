@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { getApiBase } from "@/lib/apiBase";
 import { LANGUAGES } from "@/lib/languages";
-import { setTheme } from "@/components/ThemeInit";
 import VoiceInput from "@/components/VoiceInput";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ThemeInit } from "@/components/ThemeInit";
@@ -37,7 +36,12 @@ export default function ChatPage() {
   const base = getApiBase();
   const [lang, setLang] = useState("hi-IN");
   const [busy, setBusy] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  /** Stable per-tab session so /api/chat works before any upload (server stores history by id). */
+  const [sessionId] = useState<string>(() =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+  );
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [followUp, setFollowUp] = useState("");
@@ -73,7 +77,6 @@ export default function ChatPage() {
         audio_base64?: string;
         latency_sec?: number;
       };
-      setSessionId(data.session_id);
       setDocPreview(data.analysis.document_text_preview ?? null);
       const a = data.analysis;
       let body = `${a.document_summary}\n\n${a.advice}`;
@@ -105,7 +108,7 @@ export default function ChatPage() {
   /* ── follow-up chat ───────────────────────────────────────── */
   const sendChat = async () => {
     const t = followUp.trim();
-    if (!t || !sessionId) return;
+    if (!t) return;
     setError(null);
     setBusy(true);
     setFollowUp("");
@@ -279,15 +282,15 @@ export default function ChatPage() {
             </p>
           </div>
 
-          {sessionId && (
-            <div
-              className="rounded-xl border p-3 text-xs"
-              style={{ borderColor: "var(--accent)", background: "var(--glow)", color: "var(--accent)" }}
-            >
-              <p className="font-semibold">Session active</p>
-              <p className="mt-0.5 opacity-70 truncate">{sessionId}</p>
-            </div>
-          )}
+          <div
+            className="rounded-xl border p-3 text-xs"
+            style={{ borderColor: "var(--accent)", background: "var(--glow)", color: "var(--accent)" }}
+          >
+            <p className="font-semibold">{docPreview ? "Document in context" : "Chat session"}</p>
+            <p className="mt-0.5 opacity-70">
+              {docPreview ? "Follow-ups use your upload + RAG." : "You can ask BNS questions before uploading."}
+            </p>
+          </div>
 
           {/* Spacer */}
           <div className="flex-1" />
@@ -342,7 +345,7 @@ export default function ChatPage() {
             <div>
               <h2 className="text-sm font-bold">Legal Assistant</h2>
               <p className="text-xs" style={{ color: "var(--fg2)" }}>
-                BNS · {currentLangLabel} · {sessionId ? "Session active" : "No session"}
+                BNS · {currentLangLabel} · {docPreview ? "Document linked" : "Chat"}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -486,9 +489,9 @@ export default function ChatPage() {
             style={{ borderColor: "var(--border)", background: "var(--sidebar)" }}
           >
             <div className="mx-auto max-w-3xl">
-              {!sessionId && messages.length === 0 && (
+              {messages.length > 0 && (
                 <p className="mb-2 text-center text-xs" style={{ color: "var(--fg2)" }}>
-                  Upload a document first, or ask a general BNS question below
+                  {docPreview ? "Follow-ups include your document context." : "Tip: upload a PDF or image for grounded RAG answers."}
                 </p>
               )}
               <div className="flex items-end gap-2">
@@ -497,11 +500,7 @@ export default function ChatPage() {
                     ref={textareaRef}
                     className="ns-input resize-none pr-4"
                     rows={1}
-                    placeholder={
-                      sessionId
-                        ? "Ask a follow-up question…"
-                        : "Ask a question about Indian law (BNS)…"
-                    }
+                    placeholder="Ask about BNS / your document…"
                     value={followUp}
                     onChange={handleTextareaInput}
                     onKeyDown={(e) => {

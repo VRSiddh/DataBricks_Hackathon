@@ -55,6 +55,8 @@ async def chat_turn(body: ChatBody):
         answer_en = chat_complete(messages)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}") from e
 
     answer_out = await to_user_language(answer_en, body.language)
     audio_b64 = await synthesize_speech_base64(answer_out, target_language_code=body.language)
